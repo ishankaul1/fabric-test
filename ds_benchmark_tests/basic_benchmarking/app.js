@@ -154,7 +154,7 @@ async function main() {
 			await measurePromise(() => contract.submitTransaction('CreateAsset', 'asset13', 'yellow', '5', 'Tom', '1300'))
 				.then((response) => {
 					console.log(`*** Result: committed\nTime: ${response.elapsed}`);
-					if (`${result}` !== '') {
+					if (`${response.value}` !== '') {
 						console.log(`*** Result: ${prettyJSONString(response.value.toString())}`);
 					}
 				});
