@@ -18,25 +18,8 @@ const mspOrg1 = 'Org1MSP';
 const walletPath = path.join(__dirname, 'wallet');
 const org1UserId = 'appUser';
 
-const {performance} = require('perf_hooks');
-
 function prettyJSONString(inputString) {
 	return JSON.stringify(JSON.parse(inputString), null, 2);
-}
-
-const measurePromise2 = async (promfunc) => {
-    let onPromiseDone = () => performance.now() - start;
-    let start = performance.now();
-    return promfunc().then(onPromiseDone, onPromiseDone);
-}
-
-const measurePromise = async (promFac) => {
-    const start = performance.now();
-    const returnValue = await promFac();
-    return {
-        value: returnValue,
-        elapsed: performance.now() - start
-    }
 }
 
 // pre-requisites:
@@ -137,11 +120,9 @@ async function main() {
 
 			// Let's try a query type operation (function).
 			// This will be sent to just one peer and the results will be shown.
-			console.log('\n--> Benchmark Evaluate Transaction: GetAllAssets, function returns all the current assets on the ledger.');
-			let result =  await measurePromise(() => contract.evaluateTransaction('GetAllAssets'))
-				.then((response) => {
-					console.log(`****Time: ${response.elapsed}\n*** Result: ${prettyJSONString(response.value.toString())}`);
-				})
+			console.log('\n--> Evaluate Transaction: GetAllAssets, function returns all the current assets on the ledger');
+			let result = await contract.evaluateTransaction('GetAllAssets');
+			console.log(`*** Result: ${prettyJSONString(result.toString())}`);
 
 			// Now let's try to submit a transaction.
 			// This will be sent to both peers and if both peers endorse the transaction, the endorsed proposal will be sent

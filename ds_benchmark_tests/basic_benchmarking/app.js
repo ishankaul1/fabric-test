@@ -2,7 +2,11 @@
  * Copyright IBM Corp. All Rights Reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
- */
+ *
+ * Basic benchmarking tests for the Hyperledger Fabric test network. Here, I basically just measure time to response for 
+ * each of the transactions in the original 'asset-transfer-basic' JavaScript application provided by IBM.
+*/
+
 
 'use strict';
 
@@ -18,8 +22,25 @@ const mspOrg1 = 'Org1MSP';
 const walletPath = path.join(__dirname, 'wallet');
 const org1UserId = 'appUser';
 
+const {performance} = require('perf_hooks');
+
 function prettyJSONString(inputString) {
 	return JSON.stringify(JSON.parse(inputString), null, 2);
+}
+
+/*const measurePromise2 = async (promfunc) => {
+    let onPromiseDone = () => performance.now() - start;
+    let start = performance.now();
+    return promfunc().then(onPromiseDone, onPromiseDone);
+}*/
+
+const measurePromise = async (promFunc) => {
+    const start = performance.now();
+    const returnValue = await promFunc();
+    return {
+        value: returnValue,
+        elapsed: performance.now() - start
+    }
 }
 
 // pre-requisites:
@@ -120,35 +141,49 @@ async function main() {
 
 			// Let's try a query type operation (function).
 			// This will be sent to just one peer and the results will be shown.
-			console.log('\n--> Evaluate Transaction: GetAllAssets, function returns all the current assets on the ledger');
-			let result = await contract.evaluateTransaction('GetAllAssets');
-			console.log(`*** Result: ${prettyJSONString(result.toString())}`);
+			console.log('\n--> Benchmark Evaluate Transaction: GetAllAssets, function returns all the current assets on the ledger.');
+			await measurePromise(() => contract.evaluateTransaction('GetAllAssets'))
+				.then((response) => {
+					console.log(`****Time: ${response.elapsed}\n*** Result: ${prettyJSONString(response.value.toString())}`);
+				});
 
 			// Now let's try to submit a transaction.
 			// This will be sent to both peers and if both peers endorse the transaction, the endorsed proposal will be sent
 			// to the orderer to be committed by each of the peer's to the channel ledger.
 			console.log('\n--> Submit Transaction: CreateAsset, creates new asset with ID, color, owner, size, and appraisedValue arguments');
-			result = await contract.submitTransaction('CreateAsset', 'asset13', 'yellow', '5', 'Tom', '1300');
-			console.log('*** Result: committed');
-			if (`${result}` !== '') {
-				console.log(`*** Result: ${prettyJSONString(result.toString())}`);
-			}
+			await measurePromise(() => contract.submitTransaction('CreateAsset', 'asset13', 'yellow', '5', 'Tom', '1300'))
+				.then((response) => {
+					console.log(`*** Result: committed\nTime: ${response.elapsed}`);
+					if (`${result}` !== '') {
+						console.log(`*** Result: ${prettyJSONString(response.value.toString())}`);
+					}
+				});
+			
 
 			console.log('\n--> Evaluate Transaction: ReadAsset, function returns an asset with a given assetID');
-			result = await contract.evaluateTransaction('ReadAsset', 'asset13');
-			console.log(`*** Result: ${prettyJSONString(result.toString())}`);
+			await measurePromise(() =>  contract.evaluateTransaction('ReadAsset', 'asset13'))
+				.then((response) => {
+					console.log(`****Time: ${response.elapsed}\n*** Result: ${prettyJSONString(response.value.toString())}`);
+				});
 
 			console.log('\n--> Evaluate Transaction: AssetExists, function returns "true" if an asset with given assetID exist');
-			result = await contract.evaluateTransaction('AssetExists', 'asset1');
-			console.log(`*** Result: ${prettyJSONString(result.toString())}`);
+			await measurePromise(() =>  contract.evaluateTransaction('AssetExists', 'asset1'))
+				.then((response) => {
+					console.log(`****Time: ${response.elapsed}\n*** Result: ${prettyJSONString(response.value.toString())}`);
+				});
 
 			console.log('\n--> Submit Transaction: UpdateAsset asset1, change the appraisedValue to 350');
-			await contract.submitTransaction('UpdateAsset', 'asset1', 'blue', '5', 'Tomoko', '350');
-			console.log('*** Result: committed');
+			await measurePromise(() =>  contract.submitTransaction('UpdateAsset', 'asset1', 'blue', '5', 'Tomoko', '350'))
+			.then((response) => {
+				console.log(`****Time: ${response.elapsed}\n*** Result: committed`);
+			});
+			
 
 			console.log('\n--> Evaluate Transaction: ReadAsset, function returns "asset1" attributes');
-			result = await contract.evaluateTransaction('ReadAsset', 'asset1');
-			console.log(`*** Result: ${prettyJSONString(result.toString())}`);
+			await measurePromise(() => contract.evaluateTransaction('ReadAsset', 'asset1'))
+			.then((response) => {
+				console.log(`****Time: ${response.elapsed}\n*** Result: ${prettyJSONString(response.value.toString())}`);
+			});
 
 			try {
 				// How about we try a transactions where the executing chaincode throws an error
@@ -161,12 +196,17 @@ async function main() {
 			}
 
 			console.log('\n--> Submit Transaction: TransferAsset asset1, transfer to new owner of Tom');
-			await contract.submitTransaction('TransferAsset', 'asset1', 'Tom');
+			await measurePromise(() =>  contract.submitTransaction('TransferAsset', 'asset1', 'Tom'))
+			.then((response) => {
+				console.log(`****Time: ${response.elapsed}\n*** Result: committed`);
+			});
 			console.log('*** Result: committed');
 
 			console.log('\n--> Evaluate Transaction: ReadAsset, function returns "asset1" attributes');
-			result = await contract.evaluateTransaction('ReadAsset', 'asset1');
-			console.log(`*** Result: ${prettyJSONString(result.toString())}`);
+			await measurePromise(() =>  contract.evaluateTransaction('ReadAsset', 'asset1'))
+			.then((response) => {
+				console.log(`****Time: ${response.elapsed}\n*** Result: ${prettyJSONString(response.value.toString())}`);
+			});
 		} finally {
 			// Disconnect from the gateway when the application is closing
 			// This will close all connections to the network
