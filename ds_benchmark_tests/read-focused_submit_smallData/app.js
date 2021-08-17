@@ -112,7 +112,7 @@ async function main() {
 
 			console.log('Starting script to read all assets with evaluate call... ');
 			for (let i = 0; i < numIterations; i++){
-				await measurePromise(() => contract.submitTransaction('GetAllAssets'))
+				await measurePromise(() => contract.submitTransaction('ReadAsset', 'asset1'))
 				.then((response) => {
 					output_data.push({startTime: response.start, responseTime: response.elapsed})
 					totalTime += response.elapsed;
